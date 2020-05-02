@@ -14,9 +14,8 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private val TAG = "ConnectivityMonitor"
 
     private val connectivityManager = context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    private val networkCallback: NetworkCallback = NetworkCallback()
 
-    private val currentNetworkInfo = MutableLiveData<NetworkInfo>().apply {
+    private val currentNetworkInfo= MutableLiveData<NetworkInfo>().apply {
         val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
         value = NetworkInfo.from(capabilities)
     }
@@ -24,59 +23,61 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
         NetworkInfoHandler()
 
     init {
-        val networkRequest = NetworkRequest.Builder()
+        val wifiNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .build()
+
+        val ethernetNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+            .build()
+
+        val cellularNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             .build()
 
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+        connectivityManager.registerNetworkCallback(wifiNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_WIFI))
+        connectivityManager.registerNetworkCallback(ethernetNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_ETHERNET))
+        connectivityManager.registerNetworkCallback(cellularNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_CELLULAR))
     }
 
     override fun getNetworkInfo(): LiveData<NetworkInfo> = currentNetworkInfo
 
-    private inner class NetworkCallback() : ConnectivityManager.NetworkCallback() {
-
-        private val TAG = "NetworkCallback"
+    private inner class NetworkCallback(val transport: Int) : ConnectivityManager.NetworkCallback() {
 
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
-            Log.i(TAG, "onAvailable")
-            onNetworkInfoChange(NetworkInfo.from(connectivityManager.getNetworkCapabilities(network)))
+            Log.i(TAG,"$transport::onAvailable")
+
+            val networkInfo: NetworkInfo? = when (transport) {
+                NetworkCapabilities.TRANSPORT_WIFI -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.WIFI)
+                NetworkCapabilities.TRANSPORT_ETHERNET -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.ETHERNET)
+                NetworkCapabilities.TRANSPORT_CELLULAR -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.MOBILE)
+                else -> null
+            }
+
+            networkInfo?.let { onNetworkInfoChange(it) }
         }
 
         override fun onLost(network: Network) {
             super.onLost(network)
-            Log.i(TAG, "onLost")
-            onNetworkInfoChange(NetworkInfo.from(connectivityManager.getNetworkCapabilities(network)))
-        }
+            Log.i(TAG,"$transport::onLost")
 
-        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            super.onCapabilitiesChanged(network, networkCapabilities)
-            Log.i(TAG, "onCapabilitiesChanged")
-        }
+            val networkInfo: NetworkInfo? = when (transport) {
+                NetworkCapabilities.TRANSPORT_WIFI -> NetworkInfo(NetworkInfo.State.DISCONNECTED, NetworkInfo.Type.WIFI)
+                NetworkCapabilities.TRANSPORT_ETHERNET -> NetworkInfo(NetworkInfo.State.DISCONNECTED, NetworkInfo.Type.ETHERNET)
+                NetworkCapabilities.TRANSPORT_CELLULAR -> NetworkInfo(NetworkInfo.State.DISCONNECTED, NetworkInfo.Type.MOBILE)
+                else -> null
+            }
 
-        override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-            super.onLinkPropertiesChanged(network, linkProperties)
-            Log.i(TAG, "onLinkPropertiesChanged")
-        }
-
-        override fun onUnavailable() {
-            super.onUnavailable()
-            Log.i(TAG, "onUnavailable")
-        }
-
-        override fun onLosing(network: Network, maxMsToLive: Int) {
-            super.onLosing(network, maxMsToLive)
-            Log.i(TAG, "onUnavailable")
+            networkInfo?.let { onNetworkInfoChange(it) }
         }
     }
 
     private fun onNetworkInfoChange(networkInfo: NetworkInfo) {
-        Log.i(TAG, "Network update - $networkInfo")
+        Log.i(TAG,"Network update - $networkInfo")
 
         networkInfoHandler.execute(currentNetworkInfo.value, networkInfo) { info, updated ->
-            Log.i(TAG, "Network update - $info, updated=$updated")
+            Log.i(TAG,"Network update - $info, updated=$updated")
             this.currentNetworkInfo.postValue(info)
         }
     }

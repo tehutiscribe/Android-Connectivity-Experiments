@@ -70,25 +70,11 @@ data class NetworkInfo(
     companion object Factory {
         @JvmStatic
         fun from(netInfo: android.net.NetworkInfo?) =
-            NetworkInfo(
-                State.ofValue(
-                    netInfo?.state
-                ),
-                Type.ofValue(
-                    netInfo?.type
-                )
-            )
+            NetworkInfo(State.ofValue(netInfo?.state), Type.ofValue(netInfo?.type))
 
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @JvmStatic
         fun from(capabilities: NetworkCapabilities?): NetworkInfo =
-            NetworkInfo(
-                State.from(
-                    capabilities
-                ),
-                Type.from(
-                    capabilities
-                )
-            )
+            NetworkInfo(State.from(capabilities), Type.from( capabilities))
     }
 }
