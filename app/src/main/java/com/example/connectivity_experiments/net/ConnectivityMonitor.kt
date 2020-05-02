@@ -2,6 +2,7 @@ package com.example.connectivity_experiments.net
 
 import android.content.Context
 import android.net.*
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -14,29 +15,31 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private val TAG = "ConnectivityMonitor"
 
     private val connectivityManager = context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
     private val currentNetworkInfo= MutableLiveData<NetworkInfo>().apply {
         val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-        value = NetworkInfo.from(capabilities)
+        value = NetworkInfo.from(capabilities, wifiManager.connectionInfo)
     }
-    private val networkInfoHandler: NetworkInfoHandler =
-        NetworkInfoHandler()
+    private val networkInfoHandler: NetworkInfoHandler = NetworkInfoHandler()
 
     init {
+        // set wifi network callback
         val wifiNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .build()
+        connectivityManager.registerNetworkCallback(wifiNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_WIFI))
 
+        // set ethernet network callback
         val ethernetNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
             .build()
+        connectivityManager.registerNetworkCallback(ethernetNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_ETHERNET))
 
+        // set cellular network callback
         val cellularNetworkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             .build()
-
-        connectivityManager.registerNetworkCallback(wifiNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_WIFI))
-        connectivityManager.registerNetworkCallback(ethernetNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_ETHERNET))
         connectivityManager.registerNetworkCallback(cellularNetworkRequest, NetworkCallback(NetworkCapabilities.TRANSPORT_CELLULAR))
     }
 
@@ -49,9 +52,20 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
             Log.i(TAG,"$transport::onAvailable")
 
             val networkInfo: NetworkInfo? = when (transport) {
-                NetworkCapabilities.TRANSPORT_WIFI -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.WIFI)
-                NetworkCapabilities.TRANSPORT_ETHERNET -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.ETHERNET)
-                NetworkCapabilities.TRANSPORT_CELLULAR -> NetworkInfo(NetworkInfo.State.CONNECTED, NetworkInfo.Type.MOBILE)
+                NetworkCapabilities.TRANSPORT_WIFI -> NetworkInfo(
+                    NetworkInfo.State.CONNECTED,
+                    NetworkInfo.Type.WIFI,
+                    WifiInfo.from(wifiManager.connectionInfo)
+                )
+                NetworkCapabilities.TRANSPORT_ETHERNET -> NetworkInfo(
+                    NetworkInfo.State.CONNECTED,
+                    NetworkInfo.Type.ETHERNET,
+                    WifiInfo.from(wifiManager.connectionInfo)
+                )
+                NetworkCapabilities.TRANSPORT_CELLULAR -> NetworkInfo(
+                    NetworkInfo.State.CONNECTED,
+                    NetworkInfo.Type.MOBILE
+                )
                 else -> null
             }
 

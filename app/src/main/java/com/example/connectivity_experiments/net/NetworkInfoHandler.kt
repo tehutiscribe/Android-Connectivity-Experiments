@@ -2,7 +2,10 @@ package com.example.connectivity_experiments.net
 
 class NetworkInfoHandler {
 
-    fun execute(currentNetworkInfo: NetworkInfo?, newNetworkInfo: NetworkInfo, output: (NetworkInfo, Boolean) -> Unit) {
+    fun execute(
+        currentNetworkInfo: NetworkInfo?,
+        newNetworkInfo: NetworkInfo,
+        output: (NetworkInfo, Boolean) -> Unit) {
 
         // sanity check
         if (currentNetworkInfo == null) {

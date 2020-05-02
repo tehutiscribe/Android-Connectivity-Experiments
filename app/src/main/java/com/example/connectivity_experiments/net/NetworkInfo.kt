@@ -3,11 +3,13 @@ package com.example.connectivity_experiments.net
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
+import android.text.format.Formatter.formatIpAddress
 import androidx.annotation.RequiresApi
 
 data class NetworkInfo(
     var state: State,
-    var type: Type
+    var type: Type,
+    var wifiInfo: WifiInfo? = null
 ) {
 
     enum class State {
@@ -69,12 +71,35 @@ data class NetworkInfo(
 
     companion object Factory {
         @JvmStatic
-        fun from(netInfo: android.net.NetworkInfo?) =
-            NetworkInfo(State.ofValue(netInfo?.state), Type.ofValue(netInfo?.type))
+        fun from(netInfo: android.net.NetworkInfo?, wifiInfo: android.net.wifi.WifiInfo?) =
+            NetworkInfo(State.ofValue(netInfo?.state), Type.ofValue(netInfo?.type)).also {
+                if (it.state == State.CONNECTED && (it.type == Type.WIFI || it.type == Type.ETHERNET)) {
+                    it.wifiInfo = WifiInfo.from(wifiInfo)
+                }
+            }
 
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         @JvmStatic
-        fun from(capabilities: NetworkCapabilities?): NetworkInfo =
-            NetworkInfo(State.from(capabilities), Type.from( capabilities))
+        fun from(capabilities: NetworkCapabilities?, wifiInfo: android.net.wifi.WifiInfo?): NetworkInfo =
+            NetworkInfo(State.from(capabilities), Type.from(capabilities)).also {
+                if (it.state == State.CONNECTED && (it.type == Type.WIFI || it.type == Type.ETHERNET)) {
+                    it.wifiInfo = WifiInfo.from(wifiInfo)
+                }
+            }
+    }
+}
+
+data class WifiInfo(var ssid: String,
+                    var bssid: String,
+                    var internalIp: String) {
+
+    companion object Factory {
+        @JvmStatic
+        fun from(info: android.net.wifi.WifiInfo?): WifiInfo =
+            WifiInfo(
+                info?.ssid ?: "",
+                info?.bssid ?: "",
+                info?.ipAddress?.let { formatIpAddress(it) } ?: ""
+            )
     }
 }

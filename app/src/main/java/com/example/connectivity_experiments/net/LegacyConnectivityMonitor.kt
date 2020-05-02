@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 
@@ -14,8 +15,11 @@ class LegacyConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private val TAG = "LegacyConnectivityMonitor"
 
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val receiver = ConnectivityReceiver()
-    private val currentNetworkInfo= MutableLiveData<NetworkInfo>().apply { value = NetworkInfo.from(connectivityManager.activeNetworkInfo) }
+    private val currentNetworkInfo= MutableLiveData<NetworkInfo>().apply {
+        value = NetworkInfo.from(connectivityManager.activeNetworkInfo, wifiManager.connectionInfo)
+    }
     private val networkInfoHandler = NetworkInfoHandler()
 
     init {
@@ -27,7 +31,7 @@ class LegacyConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private inner class ConnectivityReceiver : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            val networkInfo = NetworkInfo.from(readNetworkInfo(intent))
+            val networkInfo = NetworkInfo.from(readNetworkInfo(intent), wifiManager.connectionInfo)
             onNetworkInfoUpdate(networkInfo)
         }
     }
