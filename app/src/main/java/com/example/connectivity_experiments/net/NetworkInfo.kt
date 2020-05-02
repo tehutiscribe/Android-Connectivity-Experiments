@@ -71,7 +71,7 @@ data class NetworkInfo(
 
     companion object Factory {
         @JvmStatic
-        fun from(netInfo: android.net.NetworkInfo?, wifiInfo: android.net.wifi.WifiInfo?) =
+        fun from(netInfo: android.net.NetworkInfo?, wifiInfo: android.net.wifi.WifiInfo?): NetworkInfo =
             NetworkInfo(State.ofValue(netInfo?.state), Type.ofValue(netInfo?.type)).also {
                 if (it.state == State.CONNECTED && (it.type == Type.WIFI || it.type == Type.ETHERNET)) {
                     it.wifiInfo = WifiInfo.from(wifiInfo)
