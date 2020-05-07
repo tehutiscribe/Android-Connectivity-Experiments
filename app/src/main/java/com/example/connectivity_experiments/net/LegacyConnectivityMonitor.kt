@@ -9,6 +9,7 @@ import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import com.example.connectivity_experiments.net.handler.impl.NetworkInfoTransitionHandler
 
 class LegacyConnectivityMonitor(context: Context) : IConnectivityMonitor {
 
@@ -20,7 +21,8 @@ class LegacyConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private val currentNetworkInfo= MutableLiveData<NetworkInfo>().apply {
         value = NetworkInfo.from(connectivityManager.activeNetworkInfo, wifiManager.connectionInfo)
     }
-    private val networkInfoHandler = NetworkInfoHandler()
+    private val networkInfoHandler =
+        NetworkInfoTransitionHandler()
 
     init {
         context.registerReceiver(receiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))

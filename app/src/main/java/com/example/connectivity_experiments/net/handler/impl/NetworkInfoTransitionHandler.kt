@@ -1,6 +1,8 @@
-package com.example.connectivity_experiments.net
+package com.example.connectivity_experiments.net.handler.impl
 
-class NetworkInfoHandler {
+import com.example.connectivity_experiments.net.NetworkInfo
+
+class NetworkInfoTransitionHandler {
 
     fun execute(
         currentNetworkInfo: NetworkInfo?,

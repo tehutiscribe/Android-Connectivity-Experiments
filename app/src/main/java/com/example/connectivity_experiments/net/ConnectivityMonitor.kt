@@ -8,6 +8,8 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.connectivity_experiments.net.handler.INetworkInfoHandler
+import com.example.connectivity_experiments.net.handler.factory.NetworkInfoHandlerFactory
 
 @RequiresApi(Build.VERSION_CODES.M)
 class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
@@ -21,7 +23,8 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
         val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
         value = NetworkInfo.from(capabilities, wifiManager.connectionInfo)
     }
-    private val networkInfoHandler: NetworkInfoHandler = NetworkInfoHandler()
+
+    private val networkInfoHandler: INetworkInfoHandler = NetworkInfoHandlerFactory.create(this)
 
     init {
         // set wifi network callback
@@ -90,9 +93,9 @@ class ConnectivityMonitor(context: Context) : IConnectivityMonitor {
     private fun onNetworkInfoChange(networkInfo: NetworkInfo) {
         Log.i(TAG,"Network update - $networkInfo")
 
-        networkInfoHandler.execute(currentNetworkInfo.value, networkInfo) { info, updated ->
-            Log.i(TAG,"Network update - $info, updated=$updated")
-            this.currentNetworkInfo.postValue(info)
-        }
+        networkInfoHandler.handle(networkInfo) { updatedNetworkInfo: NetworkInfo ->
+            Log.i(TAG,"Network update handled - $updatedNetworkInfo")
+            currentNetworkInfo.postValue(updatedNetworkInfo)
+       }
     }
 }

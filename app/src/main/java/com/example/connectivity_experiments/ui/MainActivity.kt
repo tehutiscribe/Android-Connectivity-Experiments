@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import com.example.connectivity_experiments.R
+import com.example.connectivity_experiments.app.ExperimentsApplication
 import com.example.connectivity_experiments.net.ConnectivityMonitor
 import com.example.connectivity_experiments.net.LegacyConnectivityMonitor
 
@@ -26,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLegacyConnectivityMonitor() {
-        val legacyConnectivityMonitor = LegacyConnectivityMonitor(this)
+        val legacyConnectivityMonitor = ExperimentsApplication.INSTANCE.legacyConnectivityMonitor
         legacyConnectivityMonitor.getNetworkInfo().observe(this, Observer {
             connectivityManagerTextView.text = "ConnectivityManager\n$it"
         })
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupConnectivityMonitor() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val connectivityMonitor = ConnectivityMonitor(this)
+            val connectivityMonitor = ExperimentsApplication.INSTANCE.connectivityMonitor
             connectivityMonitor.getNetworkInfo().observe(this, Observer {
                 networkCallbacksTextView.text = "NetworkCallbacks\n$it"
             })
